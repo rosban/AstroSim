@@ -18,13 +18,18 @@ newBody(Space_Pid, Mass, Radius, Position, Velocity, Acceleration) ->
 	
 loopBody(Space_Pid, Body_Record) ->
 	
+	%%%%%%%%%%%%%%%%%%%%%
+	
+	DT=1,
 	timer:sleep(1000),
 	
+	%%%%%%%%%%%%%%%%%%%%%
+	
 	Updated_Body_Record = Body_Record#body_record{
-		position = pos(Body_Record#body_record.position, 
+		position = pos(DT, Body_Record#body_record.position, 
 			Body_Record#body_record.velocity, 
 			Body_Record#body_record.acceleration),
-		velocity = vel(Body_Record#body_record.velocity, 
+		velocity = vel(DT, Body_Record#body_record.velocity, 
 			Body_Record#body_record.acceleration),
 		acceleration = acc(Body_Record#body_record.position,
 			readSpace(Space_Pid))},
@@ -34,14 +39,19 @@ loopBody(Space_Pid, Body_Record) ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	
-pos(Pos, _Vel, _Acc) ->
-	Pos.
+pos(DT, Pos, Vel, Acc) ->
+	[T_1 + T_2 + T_3 || 
+		T_1 <- Pos, 
+		T_2 <- [V*DT || V <- Vel], 
+		T_3 <- [A*math:pow(DT,DT)/2 || A <- Acc]].
 	
-vel(Vel, _Acc) ->
-	Vel.
+vel(DT, Vel, Acc) ->
+	[T_1 + T_2 ||
+		T_1 <- Vel,
+		T_2 <- [A*DT || A <- Acc]].
 
 acc(_Pos, _Body_Records) ->
-	{0,0,0}.
+	[0,0,0].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
