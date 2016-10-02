@@ -11,8 +11,6 @@
 -record(space_record, {space, requests}).
 -record(body_record, {ref, mass, radius, position, velocity, acceleration}).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 newBody(Space_Pid, Mass, Radius, Position, Velocity, Acceleration) ->
 	spawn_link(astrosim, loopBody, [Space_Pid, #body_record{ref = make_ref(), 
 		mass = Mass, radius = Radius, position = Position, velocity = Velocity, 
@@ -46,19 +44,9 @@ acc(_Pos, _Body_Records) ->
 	{0,0,0}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 new() ->
 	spawn_link(astrosim, loopSpace, [#space_record{space=[], requests=[]}]).
-
-%inSpace(TS, Pattern) ->
-%	Tag = make_ref(),
-%	TS ! {in, {Tag, self(), Pattern}},
-%	receive 
-%		{Tag, Response} ->
-%			Response
-%	end.
 
 % Returns the whole space
 readSpace(Space_Pid) ->
@@ -81,21 +69,6 @@ loopSpace(Space_Record) ->
 		H ->
 			H
 	end, 
-	
-	%AllReqTupCombs = [{Req, Tup} ||
-	%	Req <- Space_Record#space_record.requests,
-	%	Tup <- Space_Record#space_record.space],
-	%case findMatch(AllReqTupCombs) of 
-	%	{Req, Tup} ->
-	%		{Tag, Pid, _} = Req,
-	%		Pid ! {Tag, Tup},
-	%		loopSpace(Space_Record#space_record{
-	%			space = Space_Record#space_record.space -- [Tup],
-	%			requests = Space_Record#space_record.requests -- [Req]
-	%		});
-	%	false ->
-	%		false
-	%end,		
 		
 	receive 
 		{read, Pid} ->
@@ -132,25 +105,5 @@ findBody([H|T], Ref) ->
 			findBody(T, Ref)	
 	end.
 	
-%findMatch([]) ->
-%	false;
-%findMatch([{Req, Tup} | T])	->
-%	case match(lists:last(tuple_to_list(Req)), Tup) of 
-%		true ->
-%			{Req, Tup};
-%		false ->
-%			findMatch(T)
-%	end.
-	
-	
-%match(any, _) -> true;
-%match(P, Q) when is_tuple(P), is_tuple(Q) -> 
-%	match(tuple_to_list(P),tuple_to_list(Q));
-%match([P|PS], [L|LS]) -> 
-%	case match(P, L) of 
-%			match(PS, LS);
-%		false -> 
-%			false
-%	end;
 match(_P, _P) -> true;
 match(_P, _Q) -> false.	
