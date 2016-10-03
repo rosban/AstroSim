@@ -2,11 +2,18 @@
 %
 %	A "Linda" based many body astrophysics simulator.
 %	
-%	
+%	new() - Create a new space, returns pid
+%	newBody(Space_Pid, Mass, Radius, 
+%		[Position_x, Position_y, Position_z], 
+%		[Velocity_x, Velocity_y, Velocity_z],
+%		[Acceleration_x, Acceleration_y, Acceleration_z]) 
+%			- Create a new body, returns pid 
+%	readSpace(Space_Pid) - Returns the space of bodies
+%
 %%%
 
 -module(astrosim).
--export([newBody/6, loopBody/2, new/0, readSpace/1, updateSpace/2, loopSpace/1]).
+-export([newBody/6, loopBody/2, new/0, readSpace/1, loopSpace/1]).
 
 -record(space_record, {space, requests}).
 -record(body_record, {ref, mass, radius, position, velocity, acceleration}).
@@ -33,9 +40,7 @@ loopBody(Space_Pid, Body_Record) ->
 			Body_Record#body_record.acceleration),
 		acceleration = acc(Body_Record#body_record.position,
 			readSpace(Space_Pid))},
-	
-	%io:fwrite("~p", [Updated_Body_Record]),
-	
+
 	updateSpace(Space_Pid, Updated_Body_Record),
 	loopBody(Space_Pid, Updated_Body_Record).
 
@@ -44,24 +49,20 @@ loopBody(Space_Pid, Body_Record) ->
 pos(_, [], [], []) ->
 	[];	
 pos(DT, [Hp|Tp], [Hv|Tv], [Ha|Ta]) ->
-	%Eq = [T_1 + T_2 + T_3 || 
-	%	T_1 <- Pos, 
-	%	T_2 <- [V*DT || V <- Vel], 
-	%	T_3 <- [A*math:pow(DT,DT)/2 || A <- Acc]],
-	%io:fwrite("Eq: ~p\n", [Eq]),
-	%Eq.
-	
 	[Hp + Hv*DT + Ha*math:pow(DT,DT)/2] ++ pos(DT, Tp, Tv, Ta). 
 	
 vel(_, [], []) ->
 	[];
 vel(DT, [Hv|Tv], [Ha|Ta]) ->
-	%[T_1 + T_2 ||
-	%	T_1 <- Vel,
-	%	T_2 <- [A*DT || A <- Acc]].
 	[Hv + Ha*DT] ++ vel(DT, Tv, Ta).
-	
-acc(_Pos, _Body_Records) ->
+
+acc(Pos, Body_Records) ->
+	acc(Pos, Pos, Body_Records).
+acc(_, [], _) ->
+	[];
+acc(_Base_Pos, _Pos, [_Hbr|_Tbr]) ->
+	%G=1,
+	%[G*Hbr#
 	[0,0,0].
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,7 +79,6 @@ readSpace(Space_Pid) ->
 			Body_Records
 	end.
 
-% Puts Body_record in space and removes old Body_record matching ref.
 updateSpace(Space_Pid, Body_Record) ->
 	Space_Pid ! {update, Body_Record}.
 	
@@ -106,14 +106,11 @@ loopSpace(Space_Record) ->
 						requests = Space_Record#space_record.requests 
 						-- [H]});
 				Old_Body_Record ->
-					Updated_Space_Record = Space_Record#space_record{
-						space = Space_Record#space_record.space 
-						-- [Old_Body_Record],
+					loopSpace(Space_Record#space_record{
+						space = (Space_Record#space_record.space 
+						-- [Old_Body_Record]) ++ [Body_Record],
 						requests = Space_Record#space_record.requests 
-						-- [H]},
-					loopSpace(Updated_Space_Record#space_record{
-						space = Updated_Space_Record#space_record.space 
-						++ [Body_Record]})
+						-- [H]})
 			end;
 		quit  ->
 			true
