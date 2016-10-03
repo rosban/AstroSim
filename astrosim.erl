@@ -33,23 +33,34 @@ loopBody(Space_Pid, Body_Record) ->
 			Body_Record#body_record.acceleration),
 		acceleration = acc(Body_Record#body_record.position,
 			readSpace(Space_Pid))},
-
+	
+	%io:fwrite("~p", [Updated_Body_Record]),
+	
 	updateSpace(Space_Pid, Updated_Body_Record),
 	loopBody(Space_Pid, Updated_Body_Record).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	
-pos(DT, Pos, Vel, Acc) ->
-	[T_1 + T_2 + T_3 || 
-		T_1 <- Pos, 
-		T_2 <- [V*DT || V <- Vel], 
-		T_3 <- [A*math:pow(DT,DT)/2 || A <- Acc]].
-	
-vel(DT, Vel, Acc) ->
-	[T_1 + T_2 ||
-		T_1 <- Vel,
-		T_2 <- [A*DT || A <- Acc]].
 
+pos(_, [], [], []) ->
+	[];	
+pos(DT, [Hp|Tp], [Hv|Tv], [Ha|Ta]) ->
+	%Eq = [T_1 + T_2 + T_3 || 
+	%	T_1 <- Pos, 
+	%	T_2 <- [V*DT || V <- Vel], 
+	%	T_3 <- [A*math:pow(DT,DT)/2 || A <- Acc]],
+	%io:fwrite("Eq: ~p\n", [Eq]),
+	%Eq.
+	
+	[Hp + Hv*DT + Ha*math:pow(DT,DT)/2] ++ pos(DT, Tp, Tv, Ta). 
+	
+vel(_, [], []) ->
+	[];
+vel(DT, [Hv|Tv], [Ha|Ta]) ->
+	%[T_1 + T_2 ||
+	%	T_1 <- Vel,
+	%	T_2 <- [A*DT || A <- Acc]].
+	[Hv + Ha*DT] ++ vel(DT, Tv, Ta).
+	
 acc(_Pos, _Body_Records) ->
 	[0,0,0].
 
@@ -95,11 +106,14 @@ loopSpace(Space_Record) ->
 						requests = Space_Record#space_record.requests 
 						-- [H]});
 				Old_Body_Record ->
-					loopSpace(Space_Record#space_record{
+					Updated_Space_Record = Space_Record#space_record{
 						space = Space_Record#space_record.space 
-						-- [Old_Body_Record] ++ [Body_Record],
+						-- [Old_Body_Record],
 						requests = Space_Record#space_record.requests 
-						-- [H]})
+						-- [H]},
+					loopSpace(Updated_Space_Record#space_record{
+						space = Updated_Space_Record#space_record.space 
+						++ [Body_Record]})
 			end;
 		quit  ->
 			true
